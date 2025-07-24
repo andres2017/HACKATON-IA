@@ -60,36 +60,96 @@ async def health_check():
 
 @app.get("/api/destinations", response_model=List[Dict[str, Any]])
 async def get_destinations(department: Optional[str] = None, category: Optional[str] = None, limit: int = 50):
-    """Get tourism destinations from Colombian RNT API"""
+    """Get tourism destinations from Colombian RNT API filtered for Boyacá and Cundinamarca"""
     try:
-        # Fetch data from Colombian government API
+        # Fetch data from Colombian government API with higher limit to ensure we get enough data
         url = "https://www.datos.gov.co/resource/jqjy-rhzv.json"
-        params = {}
-        
-        # Filter by department if specified
-        if department:
-            params['nomdep'] = department
-        
-        # Add limit
-        params['$limit'] = limit
+        params = {'$limit': 2000}  # Get more data to filter from
         
         response = requests.get(url, params=params)
         response.raise_for_status()
         
-        destinations = response.json()
+        all_destinations = response.json()
         
-        # Filter for Boyacá and Cundinamarca if no specific department
-        if not department:
-            destinations = [d for d in destinations if d.get('nomdep') in ['BOYACÁ', 'CUNDINAMARCA']]
+        # Filter for Boyacá and Cundinamarca (corrected department names without accents)
+        target_departments = ['BOYACA', 'CUNDINAMARCA']
+        filtered_destinations = []
         
-        # Filter by category if specified
-        if category:
-            destinations = [d for d in destinations if category.lower() in d.get('categoria', '').lower()]
+        for dest in all_destinations:
+            dept_name = dest.get('nomdep', '').strip().upper()
+            
+            # Check if destination is in our target departments
+            if dept_name in target_departments:
+                # Additional filtering by specific department if requested
+                if department:
+                    requested_dept = department.strip().upper()
+                    # Handle both with and without accents
+                    if requested_dept in ['BOYACÁ', 'BOYACA'] and dept_name != 'BOYACA':
+                        continue
+                    elif requested_dept == 'CUNDINAMARCA' and dept_name != 'CUNDINAMARCA':
+                        continue
+                
+                # Filter by category if specified
+                if category:
+                    dest_category = dest.get('categoria', '').lower()
+                    if category.lower() not in dest_category:
+                        continue
+                
+                # Clean and enrich destination data
+                processed_dest = process_destination_data(dest)
+                filtered_destinations.append(processed_dest)
         
-        return destinations[:limit]
+        # Sort by municipality and limit results
+        filtered_destinations.sort(key=lambda x: (x.get('nomdep', ''), x.get('nombre_muni', '')))
+        
+        return filtered_destinations[:limit]
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching destinations: {str(e)}")
+
+def process_destination_data(destination):
+    """Process and enrich destination data for better presentation"""
+    processed = destination.copy()
+    
+    # Ensure numeric fields are properly typed
+    numeric_fields = ['habitaciones', 'camas', 'empleados']
+    for field in numeric_fields:
+        if field in processed and processed[field]:
+            try:
+                processed[field] = int(float(processed[field]))
+            except (ValueError, TypeError):
+                processed[field] = None
+    
+    # Add department display name with proper accent
+    if processed.get('nomdep') == 'BOYACA':
+        processed['department_display'] = 'Boyacá'
+    elif processed.get('nomdep') == 'CUNDINAMARCA':
+        processed['department_display'] = 'Cundinamarca'
+    
+    # Clean and format text fields
+    text_fields = ['razon_social', 'categoria', 'subcategoria', 'nombre_muni']
+    for field in text_fields:
+        if field in processed and processed[field]:
+            processed[field] = processed[field].strip()
+    
+    # Add location string for easy display
+    processed['location'] = f"{processed.get('nombre_muni', '')}, {processed.get('department_display', processed.get('nomdep', ''))}"
+    
+    # Add category description for better UX
+    category_descriptions = {
+        'ALOJAMIENTO HOTELERO': 'Hoteles y hospedajes',
+        'ALOJAMIENTO RURAL': 'Turismo rural y ecológico',
+        'AGENCIA DE VIAJES': 'Servicios de viaje y turismo',
+        'GUÍA DE TURISMO': 'Guías turísticos profesionales',
+        'TRANSPORTE TURÍSTICO': 'Transporte especializado'
+    }
+    
+    processed['category_description'] = category_descriptions.get(
+        processed.get('categoria', ''), 
+        processed.get('categoria', '')
+    )
+    
+    return processed
 
 @app.post("/api/users/preferences")
 async def save_user_preferences(preferences: UserPreference):
