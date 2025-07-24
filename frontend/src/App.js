@@ -6,11 +6,15 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001'
 function App() {
   const [currentView, setCurrentView] = useState('home');
   const [destinations, setDestinations] = useState([]);
+  const [statistics, setStatistics] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [userPreferences, setUserPreferences] = useState({
     name: '',
     email: '',
     preferred_categories: [],
-    preferred_departments: ['BOYACÁ', 'CUNDINAMARCA'],
+    preferred_departments: ['Boyacá', 'Cundinamarca'],
     age_range: '',
     travel_style: ''
   });
