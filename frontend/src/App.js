@@ -659,6 +659,322 @@ function App() {
     </div>
   );
 
+  const renderAddDestination = () => (
+    <div className="add-destination-container">
+      <h2 className="section-title">Agregar Nuevo Destino Turístico</h2>
+      <p className="section-subtitle">Comparte un lugar especial de Boyacá o Cundinamarca y gana puntos</p>
+      
+      <div className="add-destination-card">
+        <div className="form-group">
+          <label>Nombre del destino:</label>
+          <input
+            type="text"
+            value={newDestination.name}
+            onChange={(e) => setNewDestination({...newDestination, name: e.target.value})}
+            className="form-input"
+            placeholder="Ej: Hotel Casa Colonial Villa de Leyva"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Descripción:</label>
+          <textarea
+            value={newDestination.description}
+            onChange={(e) => setNewDestination({...newDestination, description: e.target.value})}
+            className="form-textarea"
+            rows="4"
+            placeholder="Describe el destino, sus atractivos, servicios y qué lo hace especial..."
+          />
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Departamento:</label>
+            <select
+              value={newDestination.department}
+              onChange={(e) => setNewDestination({...newDestination, department: e.target.value})}
+              className="form-select"
+            >
+              <option value="">Selecciona departamento</option>
+              <option value="Boyacá">Boyacá</option>
+              <option value="Cundinamarca">Cundinamarca</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Municipio:</label>
+            <input
+              type="text"
+              value={newDestination.municipality}
+              onChange={(e) => setNewDestination({...newDestination, municipality: e.target.value})}
+              className="form-input"
+              placeholder="Ej: Villa de Leyva"
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Categoría:</label>
+            <select
+              value={newDestination.category}
+              onChange={(e) => setNewDestination({...newDestination, category: e.target.value})}
+              className="form-select"
+            >
+              <option value="">Selecciona categoría</option>
+              <option value="ALOJAMIENTO HOTELERO">Alojamiento Hotelero</option>
+              <option value="ALOJAMIENTO RURAL">Alojamiento Rural</option>
+              <option value="AGENCIA DE VIAJES">Agencia de Viajes</option>
+              <option value="GUÍA DE TURISMO">Guía de Turismo</option>
+              <option value="TRANSPORTE TURÍSTICO">Transporte Turístico</option>
+              <option value="RESTAURANTE">Restaurante</option>
+              <option value="ATRACTIVO NATURAL">Atractivo Natural</option>
+              <option value="SITIO HISTÓRICO">Sitio Histórico</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Subcategoría:</label>
+            <input
+              type="text"
+              value={newDestination.subcategory}
+              onChange={(e) => setNewDestination({...newDestination, subcategory: e.target.value})}
+              className="form-input"
+              placeholder="Ej: Hotel boutique, Ecoturismo, etc."
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Dirección:</label>
+          <input
+            type="text"
+            value={newDestination.address}
+            onChange={(e) => setNewDestination({...newDestination, address: e.target.value})}
+            className="form-input"
+            placeholder="Dirección completa del destino"
+          />
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Teléfono:</label>
+            <input
+              type="tel"
+              value={newDestination.phone}
+              onChange={(e) => setNewDestination({...newDestination, phone: e.target.value})}
+              className="form-input"
+              placeholder="(57) 300-555-0000"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Email:</label>
+            <input
+              type="email"
+              value={newDestination.email}
+              onChange={(e) => setNewDestination({...newDestination, email: e.target.value})}
+              className="form-input"
+              placeholder="contacto@destino.com"
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Sitio web (opcional):</label>
+          <input
+            type="url"
+            value={newDestination.website}
+            onChange={(e) => setNewDestination({...newDestination, website: e.target.value})}
+            className="form-input"
+            placeholder="https://www.sitiowebdestino.com"
+          />
+        </div>
+
+        <div className="points-info">
+          <div className="points-card">
+            <h4>🎯 Gana Puntos por Contribuir</h4>
+            <ul>
+              <li>+5 puntos por enviar destino</li>
+              <li>+15 puntos adicionales si es aprobado</li>
+              <li>¡Total: 20 puntos por destino aprobado!</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button 
+            onClick={submitNewDestination} 
+            className="submit-button"
+            disabled={!newDestination.name || !newDestination.department || !newDestination.category}
+          >
+            📍 Enviar Destino (+5 puntos)
+          </button>
+          <button 
+            onClick={() => setCurrentView('destinations')} 
+            className="cancel-button"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPointsAndRewards = () => (
+    <div className="points-container">
+      <h2 className="section-title">Mi Sistema de Puntos</h2>
+      
+      {/* User Level and Points */}
+      <div className="user-level-card">
+        <div className="level-info">
+          <div className="level-badge-large">
+            {userPoints.level?.current_level || 'Explorador'}
+          </div>
+          <div className="points-info-large">
+            <span className="current-points">{userPoints.total_points}</span>
+            <span className="points-label">puntos</span>
+          </div>
+        </div>
+        
+        {userPoints.level?.next_level && (
+          <div className="progress-section">
+            <p>Próximo nivel: <strong>{userPoints.level.next_level}</strong></p>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{
+                  width: `${Math.max(0, 100 - (userPoints.level.points_to_next / 50) * 100)}%`
+                }}
+              ></div>
+            </div>
+            <p className="progress-text">Te faltan {userPoints.level.points_to_next} puntos</p>
+          </div>
+        )}
+
+        <div className="level-benefits">
+          <h4>Beneficios de tu nivel:</h4>
+          <ul>
+            {(userPoints.level?.current_benefits || []).map((benefit, index) => (
+              <li key={index}>{benefit}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Ways to Earn Points */}
+      <div className="earn-points-section">
+        <h3>💰 Maneras de Ganar Puntos</h3>
+        <div className="earn-points-grid">
+          <div className="earn-point-card">
+            <div className="point-value">+20</div>
+            <div className="point-action">Destino aprobado</div>
+          </div>
+          <div className="earn-point-card">
+            <div className="point-value">+3</div>
+            <div className="point-action">Like a destino</div>
+          </div>
+          <div className="earn-point-card">
+            <div className="point-value">+2</div>
+            <div className="point-action">Guardar destino</div>
+          </div>
+          <div className="earn-point-card">
+            <div className="point-value">+1</div>
+            <div className="point-action">Ver destino</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Rewards Catalog */}
+      <div className="rewards-section">
+        <h3>🎁 Catálogo de Recompensas</h3>
+        <div className="rewards-grid">
+          {rewards.map((reward) => (
+            <div key={reward.id} className="reward-card">
+              <div className="reward-header">
+                <h4 className="reward-title">{reward.title}</h4>
+                <div className="reward-cost">{reward.points_required} pts</div>
+              </div>
+              
+              <div className="reward-content">
+                <p className="reward-description">{reward.description}</p>
+                <div className="reward-details">
+                  <p><strong>Partner:</strong> {reward.partner_name}</p>
+                  {reward.discount_percentage && (
+                    <p><strong>Descuento:</strong> {reward.discount_percentage}%</p>
+                  )}
+                  <p className="reward-terms">{reward.terms_conditions}</p>
+                </div>
+              </div>
+              
+              <div className="reward-footer">
+                <div className="reward-availability">
+                  {reward.max_redemptions - reward.current_redemptions} disponibles
+                </div>
+                <button 
+                  onClick={() => redeemReward(reward.id)}
+                  className="redeem-button"
+                  disabled={userPoints.total_points < reward.points_required}
+                >
+                  {userPoints.total_points >= reward.points_required ? 'Canjear' : 'Puntos insuficientes'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      {userPoints.transactions && userPoints.transactions.length > 0 && (
+        <div className="transactions-section">
+          <h3>📊 Historial de Puntos</h3>
+          <div className="transactions-list">
+            {userPoints.transactions.slice(0, 10).map((transaction) => (
+              <div key={transaction.id} className="transaction-item">
+                <div className="transaction-info">
+                  <span className="transaction-description">{transaction.description}</span>
+                  <span className="transaction-date">
+                    {new Date(transaction.timestamp).toLocaleDateString('es-CO')}
+                  </span>
+                </div>
+                <div className={`transaction-points ${transaction.points > 0 ? 'positive' : 'negative'}`}>
+                  {transaction.points > 0 ? '+' : ''}{transaction.points}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* My Submitted Destinations */}
+      {userDestinations && userDestinations.length > 0 && (
+        <div className="my-destinations-section">
+          <h3>📍 Mis Destinos Enviados</h3>
+          <div className="my-destinations-grid">
+            {userDestinations.map((destination) => (
+              <div key={destination.id} className="my-destination-card">
+                <div className="destination-status">
+                  <span className={`status-badge ${destination.status}`}>
+                    {destination.status === 'pending' ? '⏳ Pendiente' : 
+                     destination.status === 'approved' ? '✅ Aprobado' : '❌ Rechazado'}
+                  </span>
+                </div>
+                <h4>{destination.name}</h4>
+                <p>{destination.municipality}, {destination.department}</p>
+                <p className="destination-category">{destination.category}</p>
+                {destination.approved_at && (
+                  <p className="approval-date">
+                    Aprobado: {new Date(destination.approved_at).toLocaleDateString('es-CO')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="App">
       <nav className="navbar">
