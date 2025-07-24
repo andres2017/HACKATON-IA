@@ -259,11 +259,79 @@ function App() {
 
   const renderDestinations = () => (
     <div className="destinations-container">
-      <h2 className="section-title">Destinos Turísticos</h2>
+      <h2 className="section-title">Destinos Turísticos de Boyacá y Cundinamarca</h2>
+      
+      {/* Search and Filter Section */}
+      <div className="search-filters">
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Buscar destinos, hoteles, actividades..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+            onKeyPress={(e) => e.key === 'Enter' && searchDestinations()}
+          />
+          <button onClick={searchDestinations} className="search-button">
+            🔍 Buscar
+          </button>
+        </div>
+        
+        <div className="filter-row">
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">Todos los departamentos</option>
+            <option value="Boyacá">Boyacá</option>
+            <option value="Cundinamarca">Cundinamarca</option>
+          </select>
+          
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">Todas las categorías</option>
+            <option value="ALOJAMIENTO HOTELERO">Hoteles</option>
+            <option value="ALOJAMIENTO RURAL">Turismo Rural</option>
+            <option value="AGENCIA DE VIAJES">Agencias de Viaje</option>
+            <option value="GUÍA DE TURISMO">Guías Turísticos</option>
+            <option value="TRANSPORTE TURÍSTICO">Transporte</option>
+          </select>
+          
+          <button onClick={searchDestinations} className="filter-button">
+            Aplicar Filtros
+          </button>
+        </div>
+      </div>
+
+      {/* Statistics Overview */}
+      {statistics && (
+        <div className="statistics-overview">
+          <div className="stat-card">
+            <span className="stat-number">{statistics.total_destinations}</span>
+            <span className="stat-label">Destinos Registrados</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{statistics.by_department['Boyacá']?.count || 0}</span>
+            <span className="stat-label">En Boyacá</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{statistics.by_department['Cundinamarca']?.count || 0}</span>
+            <span className="stat-label">En Cundinamarca</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{statistics.accommodation_stats.total_rooms}</span>
+            <span className="stat-label">Habitaciones Disponibles</span>
+          </div>
+        </div>
+      )}
       
       {userId && recommendations.length > 0 && (
         <div className="recommendations-section">
-          <h3 className="recommendations-title">Recomendado para ti</h3>
+          <h3 className="recommendations-title">⭐ Recomendado para ti</h3>
           <div className="destinations-grid">
             {recommendations.slice(0, 4).map((destination) => (
               <div key={destination.rnt} className="destination-card recommended">
@@ -272,13 +340,13 @@ function App() {
                   <span className="recommendation-badge">Recomendado</span>
                 </div>
                 <div className="destination-info">
-                  <p><strong>Categoría:</strong> {destination.categoria}</p>
-                  <p><strong>Ubicación:</strong> {destination.nombre_muni}, {destination.nomdep}</p>
+                  <p><strong>Categoría:</strong> {destination.category_description || destination.categoria}</p>
+                  <p><strong>Ubicación:</strong> {destination.location || `${destination.nombre_muni}, ${destination.department_display || destination.nomdep}`}</p>
                   {destination.habitaciones && (
                     <p><strong>Habitaciones:</strong> {destination.habitaciones}</p>
                   )}
-                  {destination.empleados && (
-                    <p><strong>Empleados:</strong> {destination.empleados}</p>
+                  {destination.recommendation_reason && (
+                    <p className="recommendation-reason"><em>{destination.recommendation_reason}</em></p>
                   )}
                 </div>
                 <div className="destination-actions">
@@ -302,25 +370,45 @@ function App() {
       )}
 
       <div className="all-destinations-section">
-        <h3 className="section-subtitle">Todos los Destinos</h3>
+        <h3 className="section-subtitle">
+          {searchQuery || selectedDepartment || selectedCategory ? 'Resultados de Búsqueda' : 'Todos los Destinos'}
+        </h3>
         {loading ? (
           <div className="loading">Cargando destinos...</div>
+        ) : destinations.length === 0 ? (
+          <div className="no-results">
+            <p>No se encontraron destinos con los criterios seleccionados.</p>
+            <button onClick={() => {
+              setSearchQuery('');
+              setSelectedDepartment('');
+              setSelectedCategory('');
+              fetchDestinations();
+            }} className="reset-button">
+              Ver Todos los Destinos
+            </button>
+          </div>
         ) : (
           <div className="destinations-grid">
             {destinations.map((destination) => (
               <div key={destination.rnt} className="destination-card">
                 <div className="destination-header">
                   <h4 className="destination-name">{destination.razon_social}</h4>
+                  <span className="department-badge">
+                    {destination.department_display || destination.nomdep}
+                  </span>
                 </div>
                 <div className="destination-info">
-                  <p><strong>Categoría:</strong> {destination.categoria}</p>
+                  <p><strong>Categoría:</strong> {destination.category_description || destination.categoria}</p>
                   <p><strong>Subcategoría:</strong> {destination.subcategoria}</p>
-                  <p><strong>Ubicación:</strong> {destination.nombre_muni}, {destination.nomdep}</p>
+                  <p><strong>Ubicación:</strong> {destination.location || `${destination.nombre_muni}, ${destination.department_display || destination.nomdep}`}</p>
                   {destination.habitaciones && (
                     <p><strong>Habitaciones:</strong> {destination.habitaciones}</p>
                   )}
                   {destination.camas && (
                     <p><strong>Camas:</strong> {destination.camas}</p>
+                  )}
+                  {destination.empleados && (
+                    <p><strong>Empleados:</strong> {destination.empleados}</p>
                   )}
                 </div>
                 <div className="destination-actions">
