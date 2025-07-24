@@ -43,9 +43,12 @@ function App() {
   useEffect(() => {
     fetchDestinations();
     fetchStatistics();
+    fetchRewards();
     if (userId) {
       fetchRecommendations();
       fetchAnalytics();
+      fetchUserPoints();
+      fetchUserDestinations();
     }
   }, [userId]);
 
@@ -59,6 +62,38 @@ function App() {
       console.error('Error fetching destinations:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserDestinations = async () => {
+    if (!userId) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/user-destinations/${userId}`);
+      const data = await response.json();
+      setUserDestinations(data);
+    } catch (error) {
+      console.error('Error fetching user destinations:', error);
+    }
+  };
+
+  const fetchUserPoints = async () => {
+    if (!userId) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/points/${userId}`);
+      const data = await response.json();
+      setUserPoints(data);
+    } catch (error) {
+      console.error('Error fetching user points:', error);
+    }
+  };
+
+  const fetchRewards = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rewards`);
+      const data = await response.json();
+      setRewards(data);
+    } catch (error) {
+      console.error('Error fetching rewards:', error);
     }
   };
 
