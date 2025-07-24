@@ -682,6 +682,92 @@ def calculate_user_level(total_points: int) -> Dict[str, Any]:
     
     return levels[0]  # Default to first level
 
+@app.post("/api/admin/init-rewards")
+async def initialize_sample_rewards():
+    """Initialize sample rewards (admin function)"""
+    try:
+        sample_rewards = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "10% Descuento en Hotel Rural Boyacá",
+                "description": "Descuento especial en hoteles rurales de Boyacá para una experiencia auténtica",
+                "points_required": 50,
+                "category": "discount",
+                "discount_percentage": 10,
+                "partner_name": "Red de Hoteles Rurales Boyacá",
+                "partner_contact": "reservas@hotelesruralesboyaca.com | (57) 310-555-0001",
+                "terms_conditions": "Válido para estadías mínimas de 2 noches. No acumulable con otras promociones.",
+                "max_redemptions": 100,
+                "current_redemptions": 0,
+                "active": True,
+                "created_at": datetime.now()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Noche Gratis en Hacienda Cundinamarca",
+                "description": "Una noche gratis en hacienda tradicional de Cundinamarca con desayuno incluido",
+                "points_required": 150,
+                "category": "free_stay",
+                "partner_name": "Hacienda Los Arrayanes",
+                "partner_contact": "info@haciendalarrayanes.co | (57) 320-555-0002",
+                "terms_conditions": "Válido por reserva mínima de 3 noches. Sujeto a disponibilidad.",
+                "max_redemptions": 20,
+                "current_redemptions": 0,
+                "active": True,
+                "created_at": datetime.now()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Tour Gratuito Ciudad Perdida Boyacá",
+                "description": "Tour guiado gratuito a sitios arqueológicos y naturales de Boyacá",
+                "points_required": 100,
+                "category": "activity",
+                "partner_name": "Aventuras Boyacá Tours",
+                "partner_contact": "tours@aventurasboyaca.com | (57) 315-555-0003",
+                "terms_conditions": "Incluye transporte y guía. No incluye alimentación.",
+                "max_redemptions": 50,
+                "current_redemptions": 0,
+                "active": True,
+                "created_at": datetime.now()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "20% Descuento Transporte Turístico",
+                "description": "Descuento en servicios de transporte turístico para recorridos regionales",
+                "points_required": 75,
+                "category": "transport",
+                "discount_percentage": 20,
+                "partner_name": "TransTurismo Regional",
+                "partner_contact": "reservas@transturismoregional.co | (57) 318-555-0004",
+                "terms_conditions": "Válido para tours de día completo. Mínimo 4 personas.",
+                "max_redemptions": 75,
+                "current_redemptions": 0,
+                "active": True,
+                "created_at": datetime.now()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Experiencia VIP Laguna de Guatavita",
+                "description": "Experiencia premium con guía exclusivo, transporte privado y almuerzo gourmet",
+                "points_required": 300,
+                "category": "activity",
+                "partner_name": "Premium Experiences Colombia",
+                "partner_contact": "vip@premiumcolombia.co | (57) 311-555-0005",
+                "terms_conditions": "Experiencia para máximo 6 personas. Incluye todo el día.",
+                "max_redemptions": 10,
+                "current_redemptions": 0,
+                "active": True,
+                "created_at": datetime.now()
+            }
+        ]
+        
+        # Insert sample rewards
+        db.rewards.insert_many(sample_rewards)
+        
+        return {"message": f"Initialized {len(sample_rewards)} sample rewards successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initializing rewards: {str(e)}")
+
 @app.get("/api/destinations/statistics")
 async def get_destinations_statistics():
     """Get detailed statistics about tourism destinations in Boyacá and Cundinamarca"""
