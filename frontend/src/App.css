@@ -33,6 +33,12 @@ body {
   color: white;
 }
 
+.nav-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .nav-links {
   display: flex;
   gap: 1rem;
@@ -57,6 +63,36 @@ body {
 .nav-link.active {
   background: rgba(255,255,255,0.2);
   color: white;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.points-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.points-badge {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 /* Main Content */
@@ -153,7 +189,7 @@ body {
   color: #555;
 }
 
-.form-input, .form-select {
+.form-input, .form-select, .form-textarea {
   width: 100%;
   padding: 0.75rem;
   border: 2px solid #e2e8f0;
@@ -162,10 +198,16 @@ body {
   transition: border-color 0.3s ease;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .checkbox-group {
@@ -313,57 +355,7 @@ body {
   opacity: 0.9;
 }
 
-/* Enhanced Destination Cards */
-.department-badge {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-left: 1rem;
-}
-
-.recommendation-reason {
-  color: #667eea;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background: #f8faff;
-  border-radius: 6px;
-  border-left: 3px solid #667eea;
-}
-
-/* No Results */
-.no-results {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.no-results p {
-  font-size: 1.1rem;
-  color: #666;
-  margin-bottom: 1.5rem;
-}
-
-.reset-button {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #333;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.reset-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
+/* Destinations */
 .destinations-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -396,10 +388,6 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.recommendations-title::before {
-  content: "⭐";
 }
 
 .destinations-grid {
@@ -453,6 +441,16 @@ body {
   margin-left: 1rem;
 }
 
+.department-badge {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 1rem;
+}
+
 .destination-info {
   margin-bottom: 1.5rem;
 }
@@ -460,6 +458,16 @@ body {
 .destination-info p {
   margin-bottom: 0.5rem;
   color: #666;
+}
+
+.recommendation-reason {
+  color: #667eea;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f8faff;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
 }
 
 .destination-actions {
@@ -498,6 +506,477 @@ body {
 .like-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.no-results p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reset-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Add Destination */
+.add-destination-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.add-destination-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.points-info {
+  margin: 2rem 0;
+}
+
+.points-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.points-card h4 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.points-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.points-card li {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.submit-button {
+  flex: 1;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: none;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(79,172,254,0.4);
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79,172,254,0.6);
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background: #e2e8f0;
+  color: #333;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+  background: #cbd5e0;
+}
+
+/* Points and Rewards */
+.points-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.user-level-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+}
+
+.level-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.level-badge-large {
+  background: rgba(255,255,255,0.2);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.points-info-large {
+  text-align: right;
+}
+
+.current-points {
+  display: block;
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.points-label {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+  background: rgba(255,255,255,0.2);
+  height: 8px;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: white;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.level-benefits h4 {
+  margin-bottom: 0.5rem;
+}
+
+.level-benefits ul {
+  list-style: none;
+  padding: 0;
+}
+
+.level-benefits li {
+  padding: 0.25rem 0;
+  opacity: 0.9;
+}
+
+.earn-points-section {
+  margin-bottom: 3rem;
+}
+
+.earn-points-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.earn-points-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.earn-point-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.earn-point-card:hover {
+  transform: translateY(-2px);
+}
+
+.point-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.point-action {
+  color: #666;
+  font-weight: 500;
+}
+
+.rewards-section {
+  margin-bottom: 3rem;
+}
+
+.rewards-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.reward-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.reward-card:hover {
+  transform: translateY(-3px);
+}
+
+.reward-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.reward-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.reward-cost {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  margin-left: 1rem;
+}
+
+.reward-content {
+  padding: 0 1.5rem 1rem;
+}
+
+.reward-description {
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.reward-details p {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.reward-terms {
+  font-style: italic;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.reward-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reward-availability {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.redeem-button {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.redeem-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(79,172,254,0.4);
+}
+
+.redeem-button:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.transactions-section {
+  margin-bottom: 3rem;
+}
+
+.transactions-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.transactions-list {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
+.transaction-info {
+  flex: 1;
+}
+
+.transaction-description {
+  display: block;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.transaction-date {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.transaction-points {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.transaction-points.positive {
+  color: #10b981;
+}
+
+.transaction-points.negative {
+  color: #ef4444;
+}
+
+.my-destinations-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.my-destinations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.my-destination-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.destination-status {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.pending {
+  background: #fbbf24;
+  color: white;
+}
+
+.status-badge.approved {
+  background: #10b981;
+  color: white;
+}
+
+.status-badge.rejected {
+  background: #ef4444;
+  color: white;
+}
+
+.my-destination-card h4 {
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.destination-category {
+  color: #667eea;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.approval-date {
+  color: #10b981;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
 /* Analytics */
@@ -606,6 +1085,14 @@ body {
     gap: 1rem;
   }
 
+  .nav-center {
+    order: 2;
+  }
+
+  .nav-right {
+    order: 1;
+  }
+
   .nav-links {
     flex-wrap: wrap;
     justify-content: center;
@@ -634,5 +1121,31 @@ body {
   .stats {
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .rewards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .earn-points-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .level-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .points-info-large {
+    text-align: center;
+  }
+
+  .form-actions {
+    flex-direction: column;
   }
 }
