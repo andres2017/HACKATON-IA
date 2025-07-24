@@ -6,6 +6,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001'
 function App() {
   const [currentView, setCurrentView] = useState('home');
   const [destinations, setDestinations] = useState([]);
+  const [userDestinations, setUserDestinations] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -21,7 +22,23 @@ function App() {
   const [userId, setUserId] = useState(localStorage.getItem('tourism_user_id'));
   const [recommendations, setRecommendations] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [userPoints, setUserPoints] = useState({ total_points: 0, level: {}, transactions: [] });
+  const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showAddDestination, setShowAddDestination] = useState(false);
+  const [newDestination, setNewDestination] = useState({
+    name: '',
+    description: '',
+    category: '',
+    subcategory: '',
+    department: '',
+    municipality: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    services: []
+  });
 
   useEffect(() => {
     fetchDestinations();
