@@ -190,7 +190,7 @@ async def track_user_interaction(interaction: UserInteraction):
 
 @app.get("/api/recommendations/{user_id}")
 async def get_user_recommendations(user_id: str, limit: int = 10):
-    """Get personalized recommendations using collaborative filtering"""
+    """Get personalized recommendations using enhanced collaborative filtering for Colombian tourism"""
     try:
         # Get user preferences
         user_prefs = db.user_preferences.find_one({"id": user_id})
@@ -200,29 +200,27 @@ async def get_user_recommendations(user_id: str, limit: int = 10):
         # Get user interactions
         user_interactions = list(db.user_interactions.find({"user_id": user_id}))
         user_liked_destinations = [i['destination_rnt'] for i in user_interactions if i['action'] == 'like']
+        user_viewed_destinations = [i['destination_rnt'] for i in user_interactions]
+        
+        # Fetch all destinations for analysis
+        url = "https://www.datos.gov.co/resource/jqjy-rhzv.json"
+        response = requests.get(url, params={'$limit': 5000})
+        response.raise_for_status()
+        all_destinations_data = response.json()
+        
+        # Filter for Boyacá and Cundinamarca
+        target_departments = ['BOYACA', 'CUNDINAMARCA']
+        available_destinations = [
+            d for d in all_destinations_data 
+            if d.get('nomdep', '').strip().upper() in target_departments
+        ]
         
         # Find similar users (collaborative filtering)
         similar_users = []
         all_users = list(db.user_preferences.find({"id": {"$ne": user_id}}))
         
         for other_user in all_users:
-            # Calculate similarity based on preferences
-            similarity_score = 0
-            
-            # Department preference similarity
-            common_departments = set(user_prefs['preferred_departments']) & set(other_user['preferred_departments'])
-            similarity_score += len(common_departments) * 2
-            
-            # Category preference similarity  
-            common_categories = set(user_prefs['preferred_categories']) & set(other_user['preferred_categories'])
-            similarity_score += len(common_categories) * 2
-            
-            # Age and travel style similarity
-            if user_prefs['age_range'] == other_user['age_range']:
-                similarity_score += 1
-            if user_prefs['travel_style'] == other_user['travel_style']:
-                similarity_score += 1
-                
+            similarity_score = calculate_user_similarity(user_prefs, other_user)
             if similarity_score > 0:
                 similar_users.append((other_user['id'], similarity_score))
         
@@ -230,42 +228,143 @@ async def get_user_recommendations(user_id: str, limit: int = 10):
         similar_users.sort(key=lambda x: x[1], reverse=True)
         
         # Get destinations liked by similar users
-        recommended_destinations = []
-        for similar_user_id, _ in similar_users[:5]:  # Top 5 similar users
+        collaborative_recommendations = []
+        for similar_user_id, similarity in similar_users[:3]:  # Top 3 similar users
             similar_user_interactions = list(db.user_interactions.find({
                 "user_id": similar_user_id,
                 "action": "like"
             }))
             
             for interaction in similar_user_interactions:
-                if interaction['destination_rnt'] not in user_liked_destinations:
-                    recommended_destinations.append(interaction['destination_rnt'])
+                if interaction['destination_rnt'] not in user_viewed_destinations:
+                    collaborative_recommendations.append(interaction['destination_rnt'])
+        
+        # Content-based recommendations based on user preferences
+        content_recommendations = []
+        user_preferred_categories = user_prefs.get('preferred_categories', [])
+        user_preferred_departments = user_prefs.get('preferred_departments', [])
+        
+        for dest in available_destinations:
+            if dest.get('rnt') in user_viewed_destinations:
+                continue
+                
+            score = calculate_content_score(dest, user_prefs)
+            if score > 0:
+                content_recommendations.append((dest.get('rnt'), score))
+        
+        # Sort content recommendations by score
+        content_recommendations.sort(key=lambda x: x[1], reverse=True)
+        content_rnt_list = [rnt for rnt, score in content_recommendations[:limit]]
+        
+        # Combine collaborative and content-based recommendations
+        combined_recommendations = list(set(collaborative_recommendations + content_rnt_list))
+        
+        # If no collaborative recommendations, use content-based + popular destinations
+        if not combined_recommendations:
+            # Get popular destinations as fallback
+            popular_pipeline = [
+                {"$match": {"action": {"$in": ["like", "view"]}}},
+                {"$group": {"_id": "$destination_rnt", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}},
+                {"$limit": limit}
+            ]
+            
+            popular_destinations = list(db.user_interactions.aggregate(popular_pipeline))
+            popular_rnt_list = [item['_id'] for item in popular_destinations]
+            combined_recommendations = content_rnt_list + popular_rnt_list
         
         # Remove duplicates and limit
-        recommended_destinations = list(set(recommended_destinations))[:limit]
+        final_recommendations = list(set(combined_recommendations))[:limit]
         
-        # Fetch full destination data
-        if recommended_destinations:
-            url = "https://www.datos.gov.co/resource/jqjy-rhzv.json"
-            response = requests.get(url, params={"$limit": 1000})
-            all_destinations = response.json()
-            
-            recommendations = [
-                dest for dest in all_destinations 
-                if dest.get('rnt') in recommended_destinations
-            ]
-        else:
-            # Fallback: recommend based on user preferences
-            recommendations = await get_destinations(
-                department=user_prefs['preferred_departments'][0] if user_prefs['preferred_departments'] else None,
-                category=user_prefs['preferred_categories'][0] if user_prefs['preferred_categories'] else None,
-                limit=limit
-            )
+        # Fetch full destination data and process
+        recommendations_data = []
+        for dest in available_destinations:
+            if dest.get('rnt') in final_recommendations:
+                processed_dest = process_destination_data(dest)
+                # Add recommendation reason
+                processed_dest['recommendation_reason'] = get_recommendation_reason(
+                    dest, user_prefs, dest.get('rnt') in collaborative_recommendations
+                )
+                recommendations_data.append(processed_dest)
         
-        return recommendations
+        return recommendations_data[:limit]
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+
+def calculate_user_similarity(user1_prefs, user2_prefs):
+    """Calculate similarity score between two users"""
+    similarity_score = 0
+    
+    # Department preference similarity (weight: 3)
+    common_departments = set(user1_prefs.get('preferred_departments', [])) & set(user2_prefs.get('preferred_departments', []))
+    similarity_score += len(common_departments) * 3
+    
+    # Category preference similarity (weight: 2)
+    common_categories = set(user1_prefs.get('preferred_categories', [])) & set(user2_prefs.get('preferred_categories', []))
+    similarity_score += len(common_categories) * 2
+    
+    # Age range similarity (weight: 1)
+    if user1_prefs.get('age_range') == user2_prefs.get('age_range'):
+        similarity_score += 1
+    
+    # Travel style similarity (weight: 2)
+    if user1_prefs.get('travel_style') == user2_prefs.get('travel_style'):
+        similarity_score += 2
+    
+    return similarity_score
+
+def calculate_content_score(destination, user_prefs):
+    """Calculate content-based recommendation score"""
+    score = 0
+    
+    # Category match
+    dest_category = destination.get('categoria', '')
+    for pref_category in user_prefs.get('preferred_categories', []):
+        if pref_category.lower() in dest_category.lower():
+            score += 3
+    
+    # Department match
+    dest_dept = destination.get('nomdep', '').strip().upper()
+    for pref_dept in user_prefs.get('preferred_departments', []):
+        pref_dept_clean = pref_dept.strip().upper()
+        if pref_dept_clean in ['BOYACÁ', 'BOYACA'] and dest_dept == 'BOYACA':
+            score += 2
+        elif pref_dept_clean == 'CUNDINAMARCA' and dest_dept == 'CUNDINAMARCA':
+            score += 2
+    
+    # Travel style bonuses
+    travel_style = user_prefs.get('travel_style', '').lower()
+    if travel_style == 'aventura' and 'rural' in dest_category.lower():
+        score += 1
+    elif travel_style == 'cultural' and any(word in dest_category.lower() for word in ['guía', 'agencia']):
+        score += 1
+    elif travel_style == 'relajacion' and 'alojamiento' in dest_category.lower():
+        score += 1
+    
+    return score
+
+def get_recommendation_reason(destination, user_prefs, is_collaborative):
+    """Generate explanation for why destination was recommended"""
+    reasons = []
+    
+    if is_collaborative:
+        reasons.append("Recomendado por usuarios con gustos similares")
+    
+    # Category match
+    dest_category = destination.get('categoria', '')
+    for pref_category in user_prefs.get('preferred_categories', []):
+        if pref_category.lower() in dest_category.lower():
+            reasons.append(f"Coincide con tu interés en {pref_category.lower()}")
+            break
+    
+    # Location match
+    dest_dept = destination.get('nomdep', '').strip().upper()
+    dept_display = 'Boyacá' if dest_dept == 'BOYACA' else 'Cundinamarca'
+    if dept_display in user_prefs.get('preferred_departments', []):
+        reasons.append(f"Ubicado en {dept_display}, tu departamento preferido")
+    
+    return "; ".join(reasons) if reasons else "Destino popular en la región"
 
 @app.get("/api/destinations/statistics")
 async def get_destinations_statistics():
