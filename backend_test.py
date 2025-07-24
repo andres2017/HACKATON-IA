@@ -233,12 +233,277 @@ class TourismAPITester:
                                "total_users", "total_interactions"]
                 success = all(key in data for key in required_keys)
                 
-            self.log_test("Travel Trends Analytics", success, 
+            return self.log_test("Travel Trends Analytics", success, 
                         f"Status: {response.status_code}, Users: {data.get('total_users', 0) if success else 0}")
-            return success
         except Exception as e:
-            self.log_test("Travel Trends Analytics", False, f"Exception: {str(e)}")
-            return False
+            return self.log_test("Travel Trends Analytics", False, f"Exception: {str(e)}")
+
+    # NEW GAMIFICATION FEATURES TESTS
+
+    def test_initialize_rewards(self):
+        """Test POST /api/admin/init-rewards endpoint"""
+        try:
+            response = requests.post(f"{self.base_url}/api/admin/init-rewards", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = "rewards" in data.get('message', '').lower()
+                
+            return self.log_test("Initialize Sample Rewards", success, 
+                        f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Initialize Sample Rewards", False, f"Exception: {str(e)}")
+
+    def test_get_rewards(self):
+        """Test GET /api/rewards endpoint"""
+        try:
+            response = requests.get(f"{self.base_url}/api/rewards", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list) and len(data) > 0
+                if success and data:
+                    self.test_reward_id = data[0].get('id')  # Store first reward ID
+                    
+            return self.log_test("Get Rewards Catalog", success, 
+                        f"Status: {response.status_code}, Count: {len(data) if success else 0}")
+        except Exception as e:
+            return self.log_test("Get Rewards Catalog", False, f"Exception: {str(e)}")
+
+    def test_create_user_destination(self):
+        """Test POST /api/user-destinations endpoint"""
+        if not self.user_id:
+            return self.log_test("Create User Destination", False, "No user_id available")
+            
+        try:
+            destination_data = {
+                "user_id": self.user_id,
+                "name": "Ecolodge Los Pinos Test",
+                "description": "Hermoso ecolodge en las montañas de Boyacá con vista panorámica",
+                "category": "ALOJAMIENTO RURAL",
+                "subcategory": "Ecoturismo",
+                "department": "Boyacá",
+                "municipality": "Villa de Leyva",
+                "address": "Vereda Los Pinos, Km 5 vía Villa de Leyva",
+                "phone": "(57) 310-555-0123",
+                "email": "info@ecolodgelospinos.com",
+                "website": "https://www.ecolodgelospinos.com"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/api/user-destinations",
+                json=destination_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "destination_id" in data
+                if success:
+                    self.test_destination_id = data["destination_id"]
+                    
+            return self.log_test("Create User Destination", success, 
+                        f"Status: {response.status_code}, ID: {self.test_destination_id}")
+        except Exception as e:
+            return self.log_test("Create User Destination", False, f"Exception: {str(e)}")
+
+    def test_get_user_destinations(self):
+        """Test GET /api/user-destinations/{user_id} endpoint"""
+        if not self.user_id:
+            return self.log_test("Get User Destinations", False, "No user_id available")
+            
+        try:
+            response = requests.get(f"{self.base_url}/api/user-destinations/{self.user_id}", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                
+            return self.log_test("Get User Destinations", success, 
+                        f"Status: {response.status_code}, Count: {len(data) if success else 0}")
+        except Exception as e:
+            return self.log_test("Get User Destinations", False, f"Exception: {str(e)}")
+
+    def test_get_approved_destinations(self):
+        """Test GET /api/user-destinations/all/approved endpoint"""
+        try:
+            response = requests.get(f"{self.base_url}/api/user-destinations/all/approved", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                
+            return self.log_test("Get Approved Destinations", success, 
+                        f"Status: {response.status_code}, Count: {len(data) if success else 0}")
+        except Exception as e:
+            return self.log_test("Get Approved Destinations", False, f"Exception: {str(e)}")
+
+    def test_get_user_points(self):
+        """Test GET /api/points/{user_id} endpoint"""
+        if not self.user_id:
+            return self.log_test("Get User Points", False, "No user_id available")
+            
+        try:
+            response = requests.get(f"{self.base_url}/api/points/{self.user_id}", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                required_keys = ["total_points", "level", "transactions"]
+                success = all(key in data for key in required_keys)
+                points = data.get('total_points', 0)
+                level = data.get('level', {}).get('current_level', 'N/A')
+                
+            return self.log_test("Get User Points", success, 
+                        f"Status: {response.status_code}, Points: {points if success else 0}, Level: {level if success else 'N/A'}")
+        except Exception as e:
+            return self.log_test("Get User Points", False, f"Exception: {str(e)}")
+
+    def test_track_interaction_like(self):
+        """Test tracking like interaction for points"""
+        if not self.user_id or not self.test_destinations:
+            return self.log_test("Track Like Interaction", False, "No user_id or destinations available")
+            
+        try:
+            interaction_data = {
+                "user_id": self.user_id,
+                "destination_rnt": self.test_destinations[0]["rnt"],
+                "action": "like"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/api/users/interactions",
+                json=interaction_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            points_earned = 0
+            if success:
+                data = response.json()
+                points_earned = data.get('points_earned', 0)
+                success = points_earned == 3  # Like should give 3 points
+                
+            return self.log_test("Track Like Interaction", success, 
+                        f"Status: {response.status_code}, Points earned: {points_earned} (expected 3)")
+        except Exception as e:
+            return self.log_test("Track Like Interaction", False, f"Exception: {str(e)}")
+
+    def test_track_interaction_view(self):
+        """Test tracking view interaction for points"""
+        if not self.user_id or not self.test_destinations:
+            return self.log_test("Track View Interaction", False, "No user_id or destinations available")
+            
+        try:
+            interaction_data = {
+                "user_id": self.user_id,
+                "destination_rnt": self.test_destinations[1]["rnt"] if len(self.test_destinations) > 1 else "TEST_RNT",
+                "action": "view"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/api/users/interactions",
+                json=interaction_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            points_earned = 0
+            if success:
+                data = response.json()
+                points_earned = data.get('points_earned', 0)
+                success = points_earned == 1  # View should give 1 point
+                
+            return self.log_test("Track View Interaction", success, 
+                        f"Status: {response.status_code}, Points earned: {points_earned} (expected 1)")
+        except Exception as e:
+            return self.log_test("Track View Interaction", False, f"Exception: {str(e)}")
+
+    def test_approve_destination(self):
+        """Test POST /api/user-destinations/{destination_id}/approve endpoint"""
+        if not self.test_destination_id:
+            return self.log_test("Approve Destination", False, "No destination_id available")
+            
+        try:
+            # The endpoint expects approved_by parameter
+            response = requests.post(
+                f"{self.base_url}/api/user-destinations/{self.test_destination_id}/approve?approved_by=admin_test",
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "approved" in data.get('message', '').lower()
+                
+            return self.log_test("Approve Destination", success, 
+                        f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Approve Destination", False, f"Exception: {str(e)}")
+
+    def test_redeem_reward(self):
+        """Test POST /api/rewards/redeem endpoint"""
+        if not self.user_id or not self.test_reward_id:
+            return self.log_test("Redeem Reward", False, "No user_id or reward_id available")
+            
+        try:
+            # First check user points
+            points_response = requests.get(f"{self.base_url}/api/points/{self.user_id}", timeout=10)
+            if points_response.status_code != 200:
+                return self.log_test("Redeem Reward", False, "Could not get user points")
+            
+            user_points = points_response.json().get('total_points', 0)
+            
+            # Get reward details
+            rewards_response = requests.get(f"{self.base_url}/api/rewards", timeout=10)
+            if rewards_response.status_code != 200:
+                return self.log_test("Redeem Reward", False, "Could not get rewards")
+            
+            rewards = rewards_response.json()
+            target_reward = next((r for r in rewards if r['id'] == self.test_reward_id), None)
+            if not target_reward:
+                return self.log_test("Redeem Reward", False, "Target reward not found")
+            
+            required_points = target_reward.get('points_required', 0)
+            
+            # Try to redeem
+            redeem_data = {
+                "user_id": self.user_id,
+                "reward_id": self.test_reward_id
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/api/rewards/redeem",
+                json=redeem_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            if user_points < required_points:
+                # Should get 400 error for insufficient points
+                success = response.status_code == 400
+                return self.log_test("Redeem Reward", success, 
+                            f"Insufficient points test - User: {user_points}, Required: {required_points}, Status: {response.status_code}")
+            else:
+                # Should succeed
+                success = response.status_code == 200
+                if success:
+                    data = response.json()
+                    success = "redeemed" in data.get('message', '').lower()
+                return self.log_test("Redeem Reward", success, 
+                            f"Status: {response.status_code}, Points spent: {required_points}")
+                
+        except Exception as e:
+            return self.log_test("Redeem Reward", False, f"Exception: {str(e)}")
 
     def run_all_tests(self):
         """Run all API tests in sequence"""
