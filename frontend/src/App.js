@@ -25,6 +25,7 @@ function App() {
 
   useEffect(() => {
     fetchDestinations();
+    fetchStatistics();
     if (userId) {
       fetchRecommendations();
       fetchAnalytics();
@@ -34,11 +35,40 @@ function App() {
   const fetchDestinations = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/destinations?limit=20`);
+      const response = await fetch(`${BACKEND_URL}/api/destinations?limit=30`);
       const data = await response.json();
       setDestinations(data);
     } catch (error) {
       console.error('Error fetching destinations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/destinations/statistics`);
+      const data = await response.json();
+      setStatistics(data);
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+    }
+  };
+
+  const searchDestinations = async () => {
+    try {
+      setLoading(true);
+      let url = `${BACKEND_URL}/api/destinations/search?limit=30`;
+      
+      if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
+      if (selectedDepartment) url += `&department=${encodeURIComponent(selectedDepartment)}`;
+      if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      setDestinations(data);
+    } catch (error) {
+      console.error('Error searching destinations:', error);
     } finally {
       setLoading(false);
     }
