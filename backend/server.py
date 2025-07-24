@@ -413,6 +413,252 @@ def get_recommendation_reason(destination, user_prefs, is_collaborative):
     
     return "; ".join(reasons) if reasons else "Destino popular en la región"
 
+# User Destinations and Points System Endpoints
+
+@app.post("/api/user-destinations")
+async def create_user_destination(destination: UserDestination):
+    """Allow users to submit new tourism destinations"""
+    try:
+        if not destination.id:
+            destination.id = str(uuid.uuid4())
+        
+        destination.created_at = datetime.now()
+        destination.status = 'pending'
+        
+        destination_data = destination.dict()
+        db.user_destinations.insert_one(destination_data)
+        
+        # Give points for submitting a destination (pending approval)
+        await add_points(
+            destination.user_id, 
+            5, 
+            'destination_submitted', 
+            'Destino enviado para revisión',
+            destination.id
+        )
+        
+        return {"message": "Destino enviado exitosamente para revisión", "destination_id": destination.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating destination: {str(e)}")
+
+@app.get("/api/user-destinations/{user_id}")
+async def get_user_destinations(user_id: str):
+    """Get destinations submitted by a specific user"""
+    try:
+        destinations = list(db.user_destinations.find({"user_id": user_id}))
+        for dest in destinations:
+            dest['_id'] = str(dest['_id'])  # Convert ObjectId to string
+        return destinations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching user destinations: {str(e)}")
+
+@app.get("/api/user-destinations/all/approved")
+async def get_approved_user_destinations(limit: int = 50):
+    """Get all approved user-submitted destinations"""
+    try:
+        destinations = list(db.user_destinations.find(
+            {"status": "approved"},
+            limit=limit
+        ).sort("approved_at", -1))
+        
+        for dest in destinations:
+            dest['_id'] = str(dest['_id'])
+        return destinations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching approved destinations: {str(e)}")
+
+@app.post("/api/user-destinations/{destination_id}/approve")
+async def approve_destination(destination_id: str, approved_by: str):
+    """Approve a user-submitted destination (admin function)"""
+    try:
+        # Update destination status
+        result = db.user_destinations.update_one(
+            {"id": destination_id},
+            {
+                "$set": {
+                    "status": "approved",
+                    "approved_at": datetime.now(),
+                    "approved_by": approved_by
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Destination not found")
+        
+        # Get destination to find user_id
+        destination = db.user_destinations.find_one({"id": destination_id})
+        if destination:
+            # Give additional points for approved destination
+            await add_points(
+                destination['user_id'],
+                15,
+                'destination_approved',
+                f'Destino "{destination["name"]}" aprobado',
+                destination_id
+            )
+        
+        return {"message": "Destination approved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error approving destination: {str(e)}")
+
+@app.get("/api/points/{user_id}")
+async def get_user_points(user_id: str):
+    """Get user's current points and transaction history"""
+    try:
+        # Calculate total points
+        pipeline = [
+            {"$match": {"user_id": user_id}},
+            {"$group": {"_id": None, "total_points": {"$sum": "$points"}}}
+        ]
+        
+        result = list(db.point_transactions.aggregate(pipeline))
+        total_points = result[0]["total_points"] if result else 0
+        
+        # Get recent transactions
+        transactions = list(db.point_transactions.find(
+            {"user_id": user_id}
+        ).sort("timestamp", -1).limit(20))
+        
+        for trans in transactions:
+            trans['_id'] = str(trans['_id'])
+        
+        # Calculate user level based on points
+        level = calculate_user_level(total_points)
+        
+        return {
+            "total_points": total_points,
+            "level": level,
+            "transactions": transactions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching user points: {str(e)}")
+
+@app.get("/api/rewards")
+async def get_rewards(active_only: bool = True):
+    """Get available rewards for redemption"""
+    try:
+        query = {"active": True} if active_only else {}
+        rewards = list(db.rewards.find(query).sort("points_required", 1))
+        
+        for reward in rewards:
+            reward['_id'] = str(reward['_id'])
+        
+        return rewards
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching rewards: {str(e)}")
+
+@app.post("/api/rewards/redeem")
+async def redeem_reward(user_id: str, reward_id: str):
+    """Redeem a reward using user points"""
+    try:
+        # Get user's current points
+        user_points_data = await get_user_points(user_id)
+        current_points = user_points_data["total_points"]
+        
+        # Get reward details
+        reward = db.rewards.find_one({"id": reward_id})
+        if not reward:
+            raise HTTPException(status_code=404, detail="Reward not found")
+        
+        if not reward["active"]:
+            raise HTTPException(status_code=400, detail="Reward is not active")
+        
+        if current_points < reward["points_required"]:
+            raise HTTPException(status_code=400, detail="Insufficient points")
+        
+        # Check redemption limits
+        if reward.get("max_redemptions") and reward["current_redemptions"] >= reward["max_redemptions"]:
+            raise HTTPException(status_code=400, detail="Reward redemption limit reached")
+        
+        # Process redemption
+        redemption_id = str(uuid.uuid4())
+        
+        # Deduct points
+        await add_points(
+            user_id,
+            -reward["points_required"],
+            'redeem_reward',
+            f'Canjeado: {reward["title"]}',
+            reward_id
+        )
+        
+        # Update reward redemption count
+        db.rewards.update_one(
+            {"id": reward_id},
+            {"$inc": {"current_redemptions": 1}}
+        )
+        
+        # Create redemption record
+        redemption_data = {
+            "id": redemption_id,
+            "user_id": user_id,
+            "reward_id": reward_id,
+            "points_spent": reward["points_required"],
+            "status": "active",
+            "redeemed_at": datetime.now(),
+            "expires_at": reward.get("valid_until")
+        }
+        
+        db.redemptions.insert_one(redemption_data)
+        
+        return {
+            "message": "Reward redeemed successfully",
+            "redemption_id": redemption_id,
+            "points_spent": reward["points_required"],
+            "partner_contact": reward["partner_contact"]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error redeeming reward: {str(e)}")
+
+# Helper Functions
+
+async def add_points(user_id: str, points: int, transaction_type: str, description: str, reference_id: str = None):
+    """Helper function to add/subtract points and create transaction record"""
+    try:
+        transaction_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "points": points,
+            "transaction_type": transaction_type,
+            "description": description,
+            "reference_id": reference_id,
+            "timestamp": datetime.now()
+        }
+        
+        db.point_transactions.insert_one(transaction_data)
+        
+    except Exception as e:
+        print(f"Error adding points: {str(e)}")
+
+def calculate_user_level(total_points: int) -> Dict[str, Any]:
+    """Calculate user level based on total points"""
+    levels = [
+        {"name": "Explorador", "min_points": 0, "max_points": 49, "benefits": ["Acceso básico"]},
+        {"name": "Viajero", "min_points": 50, "max_points": 149, "benefits": ["5% descuento adicional", "Acceso a ofertas especiales"]},
+        {"name": "Aventurero", "min_points": 150, "max_points": 299, "benefits": ["10% descuento adicional", "Prioridad en reservas"]},
+        {"name": "Embajador", "min_points": 300, "max_points": 499, "benefits": ["15% descuento adicional", "Acceso VIP", "Noches gratis"]},
+        {"name": "Leyenda", "min_points": 500, "max_points": float('inf'), "benefits": ["20% descuento adicional", "Experiencias exclusivas", "Concierge personal"]}
+    ]
+    
+    for level in levels:
+        if level["min_points"] <= total_points <= level["max_points"]:
+            next_level = None
+            for next_lvl in levels:
+                if next_lvl["min_points"] > total_points:
+                    next_level = next_lvl
+                    break
+            
+            return {
+                "current_level": level["name"],
+                "current_benefits": level["benefits"],
+                "points_to_next": next_level["min_points"] - total_points if next_level else 0,
+                "next_level": next_level["name"] if next_level else None
+            }
+    
+    return levels[0]  # Default to first level
+
 @app.get("/api/destinations/statistics")
 async def get_destinations_statistics():
     """Get detailed statistics about tourism destinations in Boyacá and Cundinamarca"""
