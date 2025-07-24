@@ -717,6 +717,8 @@ function App() {
         {currentView === 'home' && renderHero()}
         {currentView === 'preferences' && renderPreferencesForm()}
         {currentView === 'destinations' && renderDestinations()}
+        {currentView === 'add-destination' && renderAddDestination()}
+        {currentView === 'points' && renderPointsAndRewards()}
         {currentView === 'analytics' && renderAnalytics()}
       </main>
 
