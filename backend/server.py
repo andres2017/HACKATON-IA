@@ -267,7 +267,154 @@ async def get_user_recommendations(user_id: str, limit: int = 10):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
 
-@app.get("/api/analytics/popular-destinations")
+@app.get("/api/destinations/statistics")
+async def get_destinations_statistics():
+    """Get detailed statistics about tourism destinations in Boyacá and Cundinamarca"""
+    try:
+        url = "https://www.datos.gov.co/resource/jqjy-rhzv.json"
+        response = requests.get(url, params={'$limit': 5000})
+        response.raise_for_status()
+        
+        all_data = response.json()
+        
+        # Filter for our target departments
+        target_departments = ['BOYACA', 'CUNDINAMARCA']
+        filtered_data = [d for d in all_data if d.get('nomdep', '').strip().upper() in target_departments]
+        
+        # Calculate statistics
+        stats = {
+            'total_destinations': len(filtered_data),
+            'by_department': {},
+            'by_category': {},
+            'by_municipality': {},
+            'accommodation_stats': {
+                'total_rooms': 0,
+                'total_beds': 0,
+                'establishments_with_rooms': 0
+            }
+        }
+        
+        # Department statistics
+        for dept in target_departments:
+            dept_data = [d for d in filtered_data if d.get('nomdep', '').strip().upper() == dept]
+            dept_display = 'Boyacá' if dept == 'BOYACA' else 'Cundinamarca'
+            
+            stats['by_department'][dept_display] = {
+                'count': len(dept_data),
+                'categories': {}
+            }
+            
+            # Categories by department
+            for item in dept_data:
+                category = item.get('categoria', 'No especificado')
+                if category not in stats['by_department'][dept_display]['categories']:
+                    stats['by_department'][dept_display]['categories'][category] = 0
+                stats['by_department'][dept_display]['categories'][category] += 1
+        
+        # Overall category statistics
+        for item in filtered_data:
+            category = item.get('categoria', 'No especificado')
+            if category not in stats['by_category']:
+                stats['by_category'][category] = 0
+            stats['by_category'][category] += 1
+            
+            # Municipality statistics
+            municipality = item.get('nombre_muni', 'No especificado')
+            dept_name = 'Boyacá' if item.get('nomdep', '').strip().upper() == 'BOYACA' else 'Cundinamarca'
+            muni_key = f"{municipality} ({dept_name})"
+            
+            if muni_key not in stats['by_municipality']:
+                stats['by_municipality'][muni_key] = 0
+            stats['by_municipality'][muni_key] += 1
+            
+            # Accommodation statistics
+            if item.get('habitaciones'):
+                try:
+                    rooms = int(float(item['habitaciones']))
+                    stats['accommodation_stats']['total_rooms'] += rooms
+                    stats['accommodation_stats']['establishments_with_rooms'] += 1
+                except (ValueError, TypeError):
+                    pass
+            
+            if item.get('camas'):
+                try:
+                    beds = int(float(item['camas']))
+                    stats['accommodation_stats']['total_beds'] += beds
+                except (ValueError, TypeError):
+                    pass
+        
+        # Sort municipalities by count
+        stats['by_municipality'] = dict(
+            sorted(stats['by_municipality'].items(), key=lambda x: x[1], reverse=True)
+        )
+        
+        return stats
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching statistics: {str(e)}")
+
+@app.get("/api/destinations/search")
+async def search_destinations(
+    query: Optional[str] = None,
+    department: Optional[str] = None,
+    category: Optional[str] = None,
+    municipality: Optional[str] = None,
+    limit: int = 20
+):
+    """Advanced search for tourism destinations"""
+    try:
+        url = "https://www.datos.gov.co/resource/jqjy-rhzv.json"
+        response = requests.get(url, params={'$limit': 5000})
+        response.raise_for_status()
+        
+        all_data = response.json()
+        
+        # Filter for Boyacá and Cundinamarca
+        target_departments = ['BOYACA', 'CUNDINAMARCA']
+        results = []
+        
+        for item in all_data:
+            dept_name = item.get('nomdep', '').strip().upper()
+            if dept_name not in target_departments:
+                continue
+            
+            # Apply filters
+            if department:
+                req_dept = department.strip().upper()
+                if req_dept in ['BOYACÁ', 'BOYACA'] and dept_name != 'BOYACA':
+                    continue
+                elif req_dept == 'CUNDINAMARCA' and dept_name != 'CUNDINAMARCA':
+                    continue
+            
+            if category and category.lower() not in item.get('categoria', '').lower():
+                continue
+            
+            if municipality and municipality.lower() not in item.get('nombre_muni', '').lower():
+                continue
+            
+            # Text search in name and category
+            if query:
+                search_text = f"{item.get('razon_social', '')} {item.get('categoria', '')} {item.get('nombre_muni', '')}".lower()
+                if query.lower() not in search_text:
+                    continue
+            
+            # Process and add to results
+            processed_item = process_destination_data(item)
+            results.append(processed_item)
+        
+        # Sort by relevance (name match first, then by municipality)
+        if query:
+            results.sort(key=lambda x: (
+                0 if query.lower() in x.get('razon_social', '').lower() else 1,
+                x.get('nombre_muni', '')
+            ))
+        else:
+            results.sort(key=lambda x: (x.get('nomdep', ''), x.get('nombre_muni', '')))
+        
+        return results[:limit]
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching destinations: {str(e)}")
 async def get_popular_destinations(limit: int = 10):
     """Get most popular destinations based on user interactions"""
     try:
