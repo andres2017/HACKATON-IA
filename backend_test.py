@@ -507,49 +507,78 @@ class TourismAPITester:
 
     def run_all_tests(self):
         """Run all API tests in sequence"""
-        print("🚀 Starting Tourism API Tests")
+        print("🚀 Starting Comprehensive Tourism API Tests with Gamification")
         print(f"📍 Testing against: {self.base_url}")
-        print("=" * 60)
+        print("=" * 70)
         
         # Test sequence - order matters for dependent tests
         test_results = []
         
-        # 1. Health check (independent)
+        # 1. Basic API tests (independent)
+        print("📋 BASIC API TESTS")
         test_results.append(self.test_health_check())
-        
-        # 2. Get destinations (independent, needed for interactions)
         test_results.append(self.test_get_destinations())
-        
-        # 3. Test new statistics endpoint
         test_results.append(self.test_destinations_statistics())
-        
-        # 4. Test new search endpoint
         test_results.append(self.test_destinations_search())
         
-        # 5. Save user preferences (needed for recommendations and interactions)
+        # 2. User setup (needed for gamification features)
+        print("\n👤 USER SETUP TESTS")
         test_results.append(self.test_save_user_preferences())
         
-        # 6. Track user interaction (depends on user_id and destinations)
-        test_results.append(self.test_track_user_interaction())
+        # 3. Gamification setup
+        print("\n🎮 GAMIFICATION SETUP TESTS")
+        test_results.append(self.test_initialize_rewards())
+        test_results.append(self.test_get_rewards())
         
-        # 7. Get recommendations (depends on user_id)
+        # 4. User destinations tests
+        print("\n📍 USER DESTINATIONS TESTS")
+        test_results.append(self.test_create_user_destination())
+        test_results.append(self.test_get_user_destinations())
+        test_results.append(self.test_get_approved_destinations())
+        
+        # 5. Points system tests
+        print("\n⭐ POINTS SYSTEM TESTS")
+        test_results.append(self.test_get_user_points())
+        test_results.append(self.test_track_interaction_like())
+        test_results.append(self.test_track_interaction_view())
+        
+        # 6. Admin functions
+        print("\n🔧 ADMIN FUNCTIONS TESTS")
+        test_results.append(self.test_approve_destination())
+        
+        # 7. Final points check after all interactions
+        print("\n📊 FINAL POINTS CHECK")
+        test_results.append(self.test_get_user_points())
+        
+        # 8. Rewards redemption
+        print("\n🎁 REWARDS REDEMPTION TESTS")
+        test_results.append(self.test_redeem_reward())
+        
+        # 9. Recommendations and analytics (depends on user_id)
+        print("\n📈 RECOMMENDATIONS & ANALYTICS TESTS")
         test_results.append(self.test_get_recommendations())
-        
-        # 8. Analytics endpoints (independent)
         test_results.append(self.test_travel_trends())
         
         # Print summary
-        print("=" * 60)
-        print(f"📊 TEST SUMMARY")
+        print("\n" + "=" * 70)
+        print(f"📊 COMPREHENSIVE TEST SUMMARY")
         print(f"Tests Run: {self.tests_run}")
         print(f"Tests Passed: {self.tests_passed}")
+        print(f"Tests Failed: {self.tests_run - self.tests_passed}")
         print(f"Success Rate: {(self.tests_passed/self.tests_run)*100:.1f}%")
         
+        if self.user_id:
+            print(f"\n🔑 Test User ID: {self.user_id}")
+        if self.test_destination_id:
+            print(f"📍 Test Destination ID: {self.test_destination_id}")
+        if self.test_reward_id:
+            print(f"🎁 Test Reward ID: {self.test_reward_id}")
+        
         if self.tests_passed == self.tests_run:
-            print("🎉 ALL TESTS PASSED!")
+            print("\n🎉 ALL TESTS PASSED! Backend API is fully functional.")
             return True
         else:
-            print(f"⚠️  {self.tests_run - self.tests_passed} TESTS FAILED")
+            print(f"\n⚠️  {self.tests_run - self.tests_passed} TESTS FAILED - Check details above")
             return False
 
 def main():
