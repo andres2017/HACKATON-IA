@@ -176,7 +176,7 @@ function App() {
     if (!userId) return;
     
     try {
-      await fetch(`${BACKEND_URL}/api/users/interactions`, {
+      const response = await fetch(`${BACKEND_URL}/api/users/interactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -187,8 +187,88 @@ function App() {
           action: action
         }),
       });
+      
+      const data = await response.json();
+      if (data.points_earned) {
+        // Show points notification
+        alert(`¡Ganaste ${data.points_earned} puntos por esta acción!`);
+        fetchUserPoints(); // Refresh points
+      }
     } catch (error) {
       console.error('Error tracking interaction:', error);
+    }
+  };
+
+  const submitNewDestination = async () => {
+    if (!userId) {
+      alert('Debes iniciar sesión para agregar destinos');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/user-destinations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newDestination,
+          user_id: userId
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert('¡Destino enviado para revisión! Ganaste 5 puntos.');
+        setShowAddDestination(false);
+        setNewDestination({
+          name: '',
+          description: '',
+          category: '',
+          subcategory: '',
+          department: '',
+          municipality: '',
+          address: '',
+          phone: '',
+          email: '',
+          website: '',
+          services: []
+        });
+        fetchUserDestinations();
+        fetchUserPoints();
+      }
+    } catch (error) {
+      console.error('Error submitting destination:', error);
+      alert('Error al enviar destino');
+    }
+  };
+
+  const redeemReward = async (rewardId) => {
+    if (!userId) return;
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rewards/redeem`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          reward_id: rewardId
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert(`¡Recompensa canjeada exitosamente! Contacta: ${data.partner_contact}`);
+        fetchUserPoints();
+        fetchRewards();
+      } else {
+        alert(data.detail || 'Error al canjear recompensa');
+      }
+    } catch (error) {
+      console.error('Error redeeming reward:', error);
+      alert('Error al canjear recompensa');
     }
   };
 
