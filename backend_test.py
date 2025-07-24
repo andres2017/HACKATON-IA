@@ -25,13 +25,10 @@ class TourismAPITester:
         self.tests_run += 1
         if success:
             self.tests_passed += 1
-            print(f"✅ {test_name} - PASSED")
+            print(f"✅ {test_name} - PASSED {details}")
         else:
-            print(f"❌ {test_name} - FAILED")
-        
-        if details:
-            print(f"   Details: {details}")
-        print()
+            print(f"❌ {test_name} - FAILED {details}")
+        return success
 
     def test_health_check(self):
         """Test GET /api/health endpoint"""
