@@ -256,17 +256,22 @@ class TourismAPITester:
         # 2. Get destinations (independent, needed for interactions)
         test_results.append(self.test_get_destinations())
         
-        # 3. Save user preferences (needed for recommendations and interactions)
+        # 3. Test new statistics endpoint
+        test_results.append(self.test_destinations_statistics())
+        
+        # 4. Test new search endpoint
+        test_results.append(self.test_destinations_search())
+        
+        # 5. Save user preferences (needed for recommendations and interactions)
         test_results.append(self.test_save_user_preferences())
         
-        # 4. Track user interaction (depends on user_id and destinations)
+        # 6. Track user interaction (depends on user_id and destinations)
         test_results.append(self.test_track_user_interaction())
         
-        # 5. Get recommendations (depends on user_id)
+        # 7. Get recommendations (depends on user_id)
         test_results.append(self.test_get_recommendations())
         
-        # 6. Analytics endpoints (independent)
-        test_results.append(self.test_popular_destinations())
+        # 8. Analytics endpoints (independent)
         test_results.append(self.test_travel_trends())
         
         # Print summary
