@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Tourism Application
-Tests all endpoints using the public URL from frontend/.env
+Comprehensive Backend API Testing for Tourism App with Gamification Features
+Tests all endpoints including new user destinations, points system, and rewards
 """
 
 import requests
@@ -17,6 +17,8 @@ class TourismAPITester:
         self.tests_passed = 0
         self.user_id = None
         self.test_destinations = []
+        self.test_destination_id = None
+        self.test_reward_id = None
 
     def log_test(self, test_name, success, details=""):
         """Log test results"""
