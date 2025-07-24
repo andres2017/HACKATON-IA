@@ -42,6 +42,53 @@ class UserInteraction(BaseModel):
     action: str  # 'view', 'like', 'save'
     timestamp: Optional[datetime] = None
 
+class UserDestination(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    name: str
+    description: str
+    category: str
+    subcategory: str
+    department: str  # 'Boyacá' or 'Cundinamarca'
+    municipality: str
+    address: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    services: List[str] = []  # Services offered
+    photos: List[str] = []  # Photo URLs
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    status: str = 'pending'  # 'pending', 'approved', 'rejected'
+    created_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[str] = None
+
+class PointTransaction(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    points: int  # positive for earned, negative for spent
+    transaction_type: str  # 'destination_approved', 'like_destination', 'profile_complete', 'redeem_reward'
+    description: str
+    reference_id: Optional[str] = None  # related destination/reward ID
+    timestamp: Optional[datetime] = None
+
+class Reward(BaseModel):
+    id: Optional[str] = None
+    title: str
+    description: str
+    points_required: int
+    category: str  # 'discount', 'free_stay', 'activity', 'transport'
+    discount_percentage: Optional[int] = None
+    partner_name: str
+    partner_contact: str
+    terms_conditions: str
+    valid_until: Optional[datetime] = None
+    max_redemptions: Optional[int] = None
+    current_redemptions: int = 0
+    active: bool = True
+    created_at: Optional[datetime] = None
+
 class TourismDestination(BaseModel):
     rnt: str
     categoria: str
