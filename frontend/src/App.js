@@ -663,31 +663,53 @@ function App() {
     <div className="App">
       <nav className="navbar">
         <div className="nav-brand">TurismoCol</div>
-        <div className="nav-links">
-          <button 
-            className={currentView === 'home' ? 'nav-link active' : 'nav-link'}
-            onClick={() => setCurrentView('home')}
-          >
-            Inicio
-          </button>
-          <button 
-            className={currentView === 'preferences' ? 'nav-link active' : 'nav-link'}
-            onClick={() => setCurrentView('preferences')}
-          >
-            Preferencias
-          </button>
-          <button 
-            className={currentView === 'destinations' ? 'nav-link active' : 'nav-link'}
-            onClick={() => setCurrentView('destinations')}
-          >
-            Destinos
-          </button>
-          <button 
-            className={currentView === 'analytics' ? 'nav-link active' : 'nav-link'}
-            onClick={() => setCurrentView('analytics')}
-          >
-            Análisis
-          </button>
+        <div className="nav-center">
+          <div className="nav-links">
+            <button 
+              className={currentView === 'home' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setCurrentView('home')}
+            >
+              Inicio
+            </button>
+            <button 
+              className={currentView === 'preferences' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setCurrentView('preferences')}
+            >
+              Preferencias
+            </button>
+            <button 
+              className={currentView === 'destinations' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setCurrentView('destinations')}
+            >
+              Destinos
+            </button>
+            <button 
+              className={currentView === 'add-destination' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setCurrentView('add-destination')}
+            >
+              ➕ Agregar Destino
+            </button>
+            <button 
+              className={currentView === 'points' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setCurrentView('points')}
+            >
+              🏆 Mis Puntos
+            </button>
+            <button 
+              className={currentView === 'analytics' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setCurrentView('analytics')}
+            >
+              Análisis
+            </button>
+          </div>
+        </div>
+        <div className="nav-right">
+          {userId && userPoints && (
+            <div className="points-display">
+              <span className="points-badge">⭐ {userPoints.total_points} pts</span>
+              <span className="level-badge">{userPoints.level?.current_level || 'Explorador'}</span>
+            </div>
+          )}
         </div>
       </nav>
 
