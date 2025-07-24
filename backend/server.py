@@ -221,7 +221,7 @@ async def save_user_preferences(preferences: UserPreference):
 
 @app.post("/api/users/interactions")
 async def track_user_interaction(interaction: UserInteraction):
-    """Track user interactions with destinations"""
+    """Track user interactions with destinations and award points"""
     try:
         if not interaction.id:
             interaction.id = str(uuid.uuid4())
@@ -231,7 +231,30 @@ async def track_user_interaction(interaction: UserInteraction):
         interaction_data = interaction.dict()
         db.user_interactions.insert_one(interaction_data)
         
-        return {"message": "Interaction tracked successfully"}
+        # Award points based on interaction type
+        points_map = {
+            'like': 3,
+            'view': 1,
+            'save': 2
+        }
+        
+        points = points_map.get(interaction.action, 0)
+        if points > 0:
+            descriptions = {
+                'like': 'Me gusta en destino',
+                'view': 'Visualización de destino',
+                'save': 'Destino guardado'
+            }
+            
+            await add_points(
+                interaction.user_id,
+                points,
+                f'interaction_{interaction.action}',
+                descriptions.get(interaction.action, 'Interacción con destino'),
+                interaction.destination_rnt
+            )
+        
+        return {"message": "Interaction tracked successfully", "points_earned": points}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error tracking interaction: {str(e)}")
 
