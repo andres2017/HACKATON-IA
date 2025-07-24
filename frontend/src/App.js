@@ -191,28 +191,62 @@ function App() {
         </div>
 
         <div className="form-group">
-          <label>Tipo de turismo preferido:</label>
+          <label>Departamentos de interés:</label>
           <div className="checkbox-group">
-            {['ALOJAMIENTO HOTELERO', 'ALOJAMIENTO RURAL', 'AGENCIA DE VIAJES', 'GUÍA DE TURISMO', 'TRANSPORTE TURÍSTICO'].map(category => (
-              <label key={category} className="checkbox-label">
+            {['Boyacá', 'Cundinamarca'].map(department => (
+              <label key={department} className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={userPreferences.preferred_categories.includes(category)}
+                  checked={userPreferences.preferred_departments.includes(department)}
                   onChange={(e) => {
                     if (e.target.checked) {
                       setUserPreferences({
                         ...userPreferences,
-                        preferred_categories: [...userPreferences.preferred_categories, category]
+                        preferred_departments: [...userPreferences.preferred_departments, department]
                       });
                     } else {
                       setUserPreferences({
                         ...userPreferences,
-                        preferred_categories: userPreferences.preferred_categories.filter(c => c !== category)
+                        preferred_departments: userPreferences.preferred_departments.filter(d => d !== department)
                       });
                     }
                   }}
                 />
-                {category}
+                {department}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Tipo de turismo preferido:</label>
+          <div className="checkbox-group">
+            {[
+              { key: 'ALOJAMIENTO HOTELERO', label: 'Hoteles y hospedajes' },
+              { key: 'ALOJAMIENTO RURAL', label: 'Turismo rural y ecológico' },
+              { key: 'AGENCIA DE VIAJES', label: 'Servicios de viaje y turismo' },
+              { key: 'GUÍA DE TURISMO', label: 'Guías turísticos profesionales' },
+              { key: 'TRANSPORTE TURÍSTICO', label: 'Transporte especializado' }
+            ].map(category => (
+              <label key={category.key} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={userPreferences.preferred_categories.includes(category.key)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setUserPreferences({
+                        ...userPreferences,
+                        preferred_categories: [...userPreferences.preferred_categories, category.key]
+                      });
+                    } else {
+                      setUserPreferences({
+                        ...userPreferences,
+                        preferred_categories: userPreferences.preferred_categories.filter(c => c !== category.key)
+                      });
+                    }
+                  }}
+                />
+                {category.label}
               </label>
             ))}
           </div>
