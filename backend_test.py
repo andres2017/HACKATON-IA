@@ -157,21 +157,69 @@ class TourismAPITester:
             self.log_test("Get Recommendations", False, f"Exception: {str(e)}")
             return False
 
-    def test_popular_destinations(self):
-        """Test GET /api/analytics/popular-destinations endpoint"""
+    def test_destinations_statistics(self):
+        """Test GET /api/destinations/statistics endpoint"""
         try:
-            response = requests.get(f"{self.base_url}/api/analytics/popular-destinations?limit=5", timeout=10)
+            response = requests.get(f"{self.base_url}/api/destinations/statistics", timeout=15)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                required_keys = ["total_destinations", "by_department", "by_category", "accommodation_stats"]
+                success = all(key in data for key in required_keys)
+                
+                # Check if we have data for Boyacá and Cundinamarca
+                if success and data.get("by_department"):
+                    has_boyaca = "Boyacá" in data["by_department"]
+                    has_cundinamarca = "Cundinamarca" in data["by_department"]
+                    success = has_boyaca or has_cundinamarca
+                
+            self.log_test("Destinations Statistics", success, 
+                        f"Status: {response.status_code}, Total: {data.get('total_destinations', 0) if success else 0}")
+            return success
+        except Exception as e:
+            self.log_test("Destinations Statistics", False, f"Exception: {str(e)}")
+            return False
+
+    def test_destinations_search(self):
+        """Test GET /api/destinations/search endpoint with filters"""
+        try:
+            # Test search with query
+            response = requests.get(f"{self.base_url}/api/destinations/search?query=hotel&limit=5", timeout=15)
             success = response.status_code == 200
             
             if success:
                 data = response.json()
                 success = isinstance(data, list)
                 
-            self.log_test("Popular Destinations Analytics", success, 
+            self.log_test("Destinations Search (query)", success, 
                         f"Status: {response.status_code}, Count: {len(data) if success else 0}")
-            return success
+            
+            # Test search with department filter
+            response2 = requests.get(f"{self.base_url}/api/destinations/search?department=Boyacá&limit=5", timeout=15)
+            success2 = response2.status_code == 200
+            
+            if success2:
+                data2 = response2.json()
+                success2 = isinstance(data2, list)
+                
+            self.log_test("Destinations Search (department filter)", success2, 
+                        f"Status: {response2.status_code}, Count: {len(data2) if success2 else 0}")
+            
+            # Test search with category filter
+            response3 = requests.get(f"{self.base_url}/api/destinations/search?category=ALOJAMIENTO HOTELERO&limit=5", timeout=15)
+            success3 = response3.status_code == 200
+            
+            if success3:
+                data3 = response3.json()
+                success3 = isinstance(data3, list)
+                
+            self.log_test("Destinations Search (category filter)", success3, 
+                        f"Status: {response3.status_code}, Count: {len(data3) if success3 else 0}")
+            
+            return success and success2 and success3
         except Exception as e:
-            self.log_test("Popular Destinations Analytics", False, f"Exception: {str(e)}")
+            self.log_test("Destinations Search", False, f"Exception: {str(e)}")
             return False
 
     def test_travel_trends(self):
